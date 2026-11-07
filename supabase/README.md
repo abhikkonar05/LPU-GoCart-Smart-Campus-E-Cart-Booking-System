@@ -20,3 +20,4 @@ This directory contains the database migration scripts, initial schema definitio
 5. Copy and paste the contents of `migrations/001_initial_schema.sql` and click **Run**.
 6. Repeat for `migrations/002_row_level_security.sql`.
 7. Repeat for `seed.sql` to populate sample carts and LPU campus stops.
+

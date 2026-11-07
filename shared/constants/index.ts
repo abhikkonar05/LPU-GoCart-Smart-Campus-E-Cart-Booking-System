@@ -44,3 +44,4 @@ export const LPU_BRAND_COLORS = {
   textPrimary: '#0F172A',  // Slate 900
   textSecondary: '#64748B',// Slate 500
 };
+

@@ -156,3 +156,4 @@ export interface CCTVDevice {
   resolution: string;
   lastPingAt?: string;
 }
+

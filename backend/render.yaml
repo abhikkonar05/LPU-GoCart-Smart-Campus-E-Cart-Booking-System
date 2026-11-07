@@ -28,3 +28,4 @@ services:
         value: demo
       - key: CORS_ORIGINS
         value: "https://lpu-gocart-admin.vercel.app,http://localhost:5173"
+

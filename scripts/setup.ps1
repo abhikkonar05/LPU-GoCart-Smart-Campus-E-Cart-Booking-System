@@ -41,3 +41,4 @@ Write-Host "`n[3/3] Setup complete!" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Next Step: Proceed with Phase 2 (Supabase Database Setup)!" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
+

@@ -35,3 +35,4 @@ LPU GoCart resolves these challenges by coupling a cloud-native **FastAPI** back
 - **Cost**: Built entirely on free-tier, modern open-source stacks (Supabase Free Tier, Render Free Tier, Vercel Free Tier, Expo Free EAS/Local Build).
 - **Security**: Supabase Row Level Security (RLS) policies enforce least privilege at the database layer. Backend services communicate via privileged service roles while mobile clients use restricted anonymous keys.
 - **Platform**: Fully configured for native Windows 11 development with PowerShell automation.
+

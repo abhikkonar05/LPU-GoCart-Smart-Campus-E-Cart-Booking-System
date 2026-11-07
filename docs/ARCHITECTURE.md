@@ -62,3 +62,4 @@ flowchart TD
 #### 3. Administrative Console (React + Vite)
 - **Role**: Real-time fleet oversight.
 - **Features**: Live Leaflet map displaying moving cart markers, CCTV health monitors, driver performance analytics, route configuration, and automated revenue reconciliation.
+

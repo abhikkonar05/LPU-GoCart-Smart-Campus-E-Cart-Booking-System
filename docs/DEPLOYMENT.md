@@ -77,3 +77,4 @@ This guide outlines step-by-step production deployment using free-tier services.
    eas build -p android --profile preview
    ```
 4. EAS builds the standalone APK on Expo cloud infrastructure and delivers an installable `.apk` download link.
+

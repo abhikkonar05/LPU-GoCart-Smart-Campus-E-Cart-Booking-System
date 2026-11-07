@@ -203,3 +203,4 @@ System security and administrative action ledger.
 - `metadata` (JSONB)
 - `ip_address` (VARCHAR(45))
 - `created_at` (TIMESTAMPTZ, DEFAULT NOW())
+
