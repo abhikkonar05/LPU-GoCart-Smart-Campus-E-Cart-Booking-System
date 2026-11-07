@@ -67,3 +67,4 @@ if db_url and "your-db-password" not in db_url:
         print(f"[WARNING] PostgreSQL direct connection test: {e}")
 
 print("=" * 60)
+
