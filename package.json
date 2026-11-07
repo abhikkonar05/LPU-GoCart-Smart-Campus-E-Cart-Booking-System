@@ -1,0 +1,28 @@
+{
+  "name": "lpu-gocart-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LPU GoCart - Smart Campus E-Cart Booking & Tracking System Monorepo",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "check-env": "powershell -ExecutionPolicy Bypass -File ./scripts/check_environment.ps1",
+    "setup-all": "powershell -ExecutionPolicy Bypass -File ./scripts/setup.ps1",
+    "admin:dev": "npm run dev --workspace=apps/admin-dashboard",
+    "student:start": "npm run start --workspace=apps/student-app",
+    "driver:start": "npm run start --workspace=apps/driver-app",
+    "backend:dev": "powershell -Command \"cd backend; .\\.venv\\Scripts\\Activate.ps1; uvicorn app.main:app --reload --port 8000\""
+  },
+  "keywords": [
+    "lpu",
+    "ecart",
+    "campus-transport",
+    "expo",
+    "react-native",
+    "fastapi",
+    "supabase"
+  ],
+  "author": "LPU GoCart Team",
+  "license": "MIT"
+}
