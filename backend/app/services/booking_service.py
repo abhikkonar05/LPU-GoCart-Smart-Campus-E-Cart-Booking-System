@@ -1,6 +1,6 @@
 """
 LPU GoCart - Booking & Ticketing Lifecycle Service
-Manages reservation lifecycle: PENDING -> CONFIRMED -> BOARDED / CANCELLED.
+Manages reservation lifecycle: PENDING -> CONFIRMED -> CHECKED_IN / CANCELLED.
 """
 
 import random
@@ -8,7 +8,7 @@ import string
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
-from app.database.models.models import Booking, SeatLock, QRTicket, Notification, CartSeat, Trip
+from app.database.models import Booking, SeatLock, QRTicket, Notification, CartSeat, Trip, Cart, LuggageBooking
 from app.core.security import generate_qr_ticket_token
 
 def generate_booking_code() -> str:
@@ -18,45 +18,71 @@ def generate_booking_code() -> str:
 
 def create_pending_booking(
     db: Session,
-    student_id: str,
-    lock_id: str,
+    user_id: str,
+    lock_id: Optional[str],
     trip_id: str,
-    seat_id: str,
+    cart_id: str,
     pickup_stop_id: str,
     drop_stop_id: str,
-    fare_amount: float = 10.0
+    seat_id: Optional[str] = None,
+    booking_type: str = "SEAT",
+    total_amount: float = 10.0,
+    small_bags: int = 0,
+    medium_bags: int = 0,
+    large_bags: int = 0,
+    luggage_fee: float = 0.0
 ) -> Tuple[bool, Optional[Booking], str]:
-    """Create a PENDING booking tied to a valid active seat lock."""
+    """Create a PENDING booking tied to a valid active seat lock (if individual seat)."""
     now = datetime.now(timezone.utc)
     
-    # 1. Verify seat lock belongs to this student and is active
-    lock = db.query(SeatLock).filter(
-        SeatLock.id == lock_id,
-        SeatLock.student_id == student_id,
-        SeatLock.is_released == False,
-        SeatLock.expires_at > now
-    ).first()
+    if booking_type == "SEAT" and lock_id:
+        lock = db.query(SeatLock).filter(
+            SeatLock.id == lock_id,
+            SeatLock.user_id == user_id,
+            SeatLock.is_released == False
+        ).first()
 
-    if not lock:
-        return False, None, "Seat lock has expired or is invalid. Please select your seat again."
+        if lock:
+            from app.services.seat_lock_service import to_utc
+            exp = to_utc(lock.expires_at)
+            if not exp or exp <= now:
+                lock = None
 
-    # 2. Generate unique booking code
+        if not lock:
+            return False, None, "Seat lock has expired or is invalid. Please select your seat again."
+
+    # Generate unique booking code
     code = generate_booking_code()
     while db.query(Booking).filter(Booking.booking_code == code).first():
         code = generate_booking_code()
 
-    # 3. Create booking record
+    # Create booking record
     booking = Booking(
         booking_code=code,
-        student_id=student_id,
+        user_id=user_id,
         trip_id=trip_id,
-        seat_id=seat_id,
+        cart_id=cart_id,
+        booking_type=booking_type,
         pickup_stop_id=pickup_stop_id,
         drop_stop_id=drop_stop_id,
-        fare_amount=fare_amount,
+        seat_id=seat_id,
+        total_amount=total_amount,
         status="PENDING"
     )
     db.add(booking)
+    db.flush()
+
+    # Optional luggage booking
+    if small_bags > 0 or medium_bags > 0 or large_bags > 0:
+        luggage = LuggageBooking(
+            booking_id=booking.id,
+            small_bags=small_bags,
+            medium_bags=medium_bags,
+            large_bags=large_bags,
+            luggage_fee=luggage_fee
+        )
+        db.add(luggage)
+
     try:
         db.commit()
         db.refresh(booking)
@@ -72,42 +98,43 @@ def confirm_booking_payment(
 ) -> Tuple[bool, Optional[Booking], str]:
     """
     Finalize a confirmed booking after verified payment success.
-    Creates QR boarding ticket and notifies student.
+    Creates QR boarding ticket and notifies user.
     """
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not booking:
         return False, None, "Booking not found."
 
-    if booking.status in ["CONFIRMED", "BOARDED"]:
+    if booking.status in ["CONFIRMED", "CHECKED_IN", "BOARDED"]:
         return True, booking, "Booking is already confirmed."
 
     # Confirm booking
     booking.status = "CONFIRMED"
 
     # Release temporary lock (the booking record now holds the seat permanently)
-    lock = db.query(SeatLock).filter(
-        SeatLock.trip_id == booking.trip_id,
-        SeatLock.seat_id == booking.seat_id,
-        SeatLock.student_id == booking.student_id
-    ).first()
-    if lock:
-        lock.is_released = True
+    if booking.seat_id:
+        lock = db.query(SeatLock).filter(
+            SeatLock.trip_id == booking.trip_id,
+            SeatLock.seat_id == booking.seat_id,
+            SeatLock.user_id == booking.user_id
+        ).first()
+        if lock:
+            lock.is_released = True
 
     # Generate cryptographic QR token
-    qr_token = generate_qr_ticket_token(booking.booking_code, booking.student_id, booking.trip_id)
+    qr_token = generate_qr_ticket_token(booking.booking_code, booking.user_id, booking.trip_id)
     
     qr_ticket = db.query(QRTicket).filter(QRTicket.booking_id == booking.id).first()
     if not qr_ticket:
         qr_ticket = QRTicket(
             booking_id=booking.id,
             qr_token=qr_token,
-            is_used=False
+            is_verified=False
         )
         db.add(qr_ticket)
 
-    # Issue student notification
+    # Issue notification
     notif = Notification(
-        recipient_id=booking.student_id,
+        user_id=booking.user_id,
         title="E-Cart Booking Confirmed!",
         message=f"Booking {booking.booking_code} confirmed! Present your QR boarding pass to the driver."
     )
@@ -116,4 +143,3 @@ def confirm_booking_payment(
     db.commit()
     db.refresh(booking)
     return True, booking, "Booking confirmed and QR boarding pass issued."
-

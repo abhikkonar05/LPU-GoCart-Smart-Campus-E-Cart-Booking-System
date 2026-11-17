@@ -6,7 +6,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
-from app.database.models.models import Route, RouteStop
+from app.database.models import Route, RouteStop
 from app.schemas.route import RouteSchema, RouteStopSchema
 
 router = APIRouter(prefix="/routes", tags=["Routes & Stops"])
@@ -66,4 +66,3 @@ def get_route_detail(route_id: str, db: Session = Depends(get_db)):
         is_active=route.is_active,
         stops=stops
     )
-

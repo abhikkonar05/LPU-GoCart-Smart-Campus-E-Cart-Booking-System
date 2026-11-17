@@ -10,14 +10,12 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=6)
     full_name: str = Field(..., min_length=2)
     phone_number: Optional[str] = None
-    role: str = Field(default="STUDENT", pattern="^(STUDENT|DRIVER|ADMIN)$")
+    role: str = Field(default="CUSTOMER")
     
-    # Student specific fields
+    # Optional metadata
     registration_number: Optional[str] = None
     department: Optional[str] = None
     hostel_block: Optional[str] = None
-    
-    # Driver specific fields
     license_number: Optional[str] = None
 
 class LoginRequest(BaseModel):
@@ -39,8 +37,6 @@ class UserProfileResponse(BaseModel):
     phone_number: Optional[str] = None
     role: str
     avatar_url: Optional[str] = None
-    
-    # Optional extensions
     registration_number: Optional[str] = None
     department: Optional[str] = None
     hostel_block: Optional[str] = None
@@ -49,4 +45,3 @@ class UserProfileResponse(BaseModel):
 
     class Config:
         from_attributes = True
-

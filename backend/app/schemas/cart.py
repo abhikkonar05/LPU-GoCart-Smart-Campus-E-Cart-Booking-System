@@ -20,17 +20,18 @@ class CartSeatSchema(BaseModel):
 class CartSummarySchema(BaseModel):
     id: str
     cart_number: str
+    name: Optional[str] = None
     model: str
     total_seats: int
-    available_seats: int = 8
+    available_seats: int = 6
     battery_percentage: int
     status: str
     current_route_id: Optional[str] = None
     route_name: Optional[str] = None
     route_code: Optional[str] = None
-    has_cctv: bool = False
     current_latitude: Optional[float] = None
     current_longitude: Optional[float] = None
+    has_cctv: bool = False
 
     class Config:
         from_attributes = True
@@ -39,14 +40,15 @@ class CartDetailSchema(CartSummarySchema):
     seats: List[CartSeatSchema] = []
     assigned_driver_name: Optional[str] = None
     assigned_driver_phone: Optional[str] = None
-    cctv_is_online: Optional[bool] = None
+    luggage_capacity_small: int = 4
+    luggage_capacity_medium: int = 3
+    luggage_capacity_large: int = 2
 
 class CartCreateRequest(BaseModel):
     cart_number: str
-    model: str = "Club Car Transporter 8"
-    total_seats: int = 8
+    name: str = "Campus Shuttle"
+    model: str = "Club Car Transporter 6"
+    total_passenger_seats: int = 6
     battery_percentage: int = 100
-    status: str = "ACTIVE"
+    cart_status: str = "AVAILABLE"
     current_route_id: Optional[str] = None
-    has_cctv: bool = False
-

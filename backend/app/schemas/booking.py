@@ -22,23 +22,29 @@ class SeatLockResponse(BaseModel):
     remaining_seconds: int
 
 class BookingCreateRequest(BaseModel):
-    lock_id: str
+    lock_id: Optional[str] = None
     trip_id: str
     cart_id: str
-    seat_id: str
+    seat_id: Optional[str] = None
+    booking_type: str = "SEAT" # SEAT, FULL_CART
     pickup_stop_id: str
     drop_stop_id: str
     fare_amount: float = 10.0
+    small_bags: int = 0
+    medium_bags: int = 0
+    large_bags: int = 0
+    luggage_fee: float = 0.0
 
 class BookingResponse(BaseModel):
     id: str
     booking_code: str
-    student_id: str
+    user_id: str
     trip_id: str
     cart_id: str
     cart_number: str
-    seat_number: int
-    seat_label: str
+    booking_type: str = "SEAT"
+    seat_number: Optional[int] = None
+    seat_label: Optional[str] = None
     pickup_stop_name: str
     drop_stop_name: str
     fare_amount: float
@@ -53,12 +59,12 @@ class TicketResponse(BaseModel):
     booking_id: str
     booking_code: str
     qr_token: str
-    student_name: str
+    passenger_name: str
     cart_number: str
     seat_label: str
+    booking_type: str = "SEAT"
     pickup_stop: str
     drop_stop: str
     fare: float
     status: str
     created_at: datetime
-

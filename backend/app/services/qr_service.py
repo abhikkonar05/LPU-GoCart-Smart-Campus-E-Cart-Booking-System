@@ -1,12 +1,12 @@
 """
 LPU GoCart - QR Code Boarding Validation Service
-Verifies digital QR tickets scanned by drivers using smartphone camera.
+Verifies digital QR tickets scanned by drivers using camera or manual code entry.
 """
 
 from datetime import datetime, timezone
 from typing import Dict, Any
 from sqlalchemy.orm import Session
-from app.database.models.models import QRTicket, Booking, Driver, CartSeat, Profile
+from app.database.models import QRTicket, Booking, User, CartSeat
 
 def verify_and_redeem_ticket(
     db: Session,
@@ -14,19 +14,18 @@ def verify_and_redeem_ticket(
     driver_id: str
 ) -> Dict[str, Any]:
     """
-    Verify student QR code ticket scanned by the cart driver.
-    Marks ticket as used and booking as BOARDED.
+    Verify passenger QR code ticket scanned by the cart driver.
+    Marks ticket as verified and booking as CHECKED_IN.
     """
+    clean_token = qr_token.strip()
     # 1. Lookup ticket by token or booking code
-    ticket = db.query(QRTicket).filter(QRTicket.qr_token == qr_token).first()
+    ticket = db.query(QRTicket).filter(QRTicket.qr_token == clean_token).first()
     
-    if not ticket and qr_token.startswith("LPU-TICKET:"):
-        parts = qr_token.split(":")
-        if len(parts) >= 2:
-            booking_code = parts[1]
-            booking = db.query(Booking).filter(Booking.booking_code == booking_code).first()
-            if booking:
-                ticket = db.query(QRTicket).filter(QRTicket.booking_id == booking.id).first()
+    if not ticket and (clean_token.startswith("LPU-TICKET:") or clean_token.startswith("LPU-BK-")):
+        booking_code = clean_token.split(":")[-1]
+        booking = db.query(Booking).filter(Booking.booking_code == booking_code).first()
+        if booking:
+            ticket = db.query(QRTicket).filter(QRTicket.booking_id == booking.id).first()
 
     if not ticket:
         return {
@@ -38,38 +37,39 @@ def verify_and_redeem_ticket(
     if not booking:
         return {"valid": False, "message": "Booking record missing."}
 
-    # 2. Check if already boarded
-    if ticket.is_used or booking.status == "BOARDED":
+    # 2. Check if already checked in or boarded
+    if ticket.is_verified or booking.status in ("CHECKED_IN", "BOARDED"):
+        time_str = ticket.verified_at.strftime('%H:%M:%S') if ticket.verified_at else 'earlier'
         return {
             "valid": False,
-            "message": f"Ticket already used on {ticket.scanned_at.strftime('%H:%M:%S') if ticket.scanned_at else 'earlier'}.",
+            "message": f"Ticket already used and checked in at {time_str}.",
             "booking_code": booking.booking_code
         }
 
     if booking.status != "CONFIRMED":
         return {
             "valid": False,
-            "message": f"Ticket cannot be boarded. Current status is {booking.status}."
+            "message": f"Ticket cannot be checked in. Current status is {booking.status}."
         }
 
-    # 3. Mark as boarded
+    # 3. Mark as checked in
     now = datetime.now(timezone.utc)
-    ticket.is_used = True
-    ticket.scanned_at = now
-    ticket.scanned_by_driver_id = driver_id
-    booking.status = "BOARDED"
+    ticket.is_verified = True
+    ticket.verified_at = now
+    ticket.verified_by_driver_id = driver_id
+    booking.status = "CHECKED_IN"
 
     db.commit()
 
-    student_name = booking.student.profile.full_name if booking.student and booking.student.profile else "Student"
-    seat_label = booking.seat.seat_label if booking.seat else f"Seat #{booking.seat_id}"
+    passenger_name = booking.user.full_name if booking.user else "Passenger"
+    seat_label = booking.seat.seat_label if booking.seat else (f"Full Cart" if booking.booking_type == "FULL_CART" else "General")
 
     return {
         "valid": True,
-        "message": f"Boarding Verified! Welcome aboard, {student_name}.",
+        "message": f"Boarding Verified! Welcome aboard, {passenger_name}.",
         "booking_code": booking.booking_code,
-        "student_name": student_name,
+        "passenger_name": passenger_name,
         "seat_label": seat_label,
+        "booking_type": booking.booking_type,
         "scanned_at": now.isoformat()
     }
-

@@ -15,24 +15,11 @@ class FleetMetricsResponse(BaseModel):
     total_drivers: int
     total_bookings_today: int
     total_revenue_today: float
-    cctv_online_count: int
-
-class CCTVDeviceSchema(BaseModel):
-    id: str
-    cart_id: str
-    cart_number: str
-    device_serial: str
-    stream_url: Optional[str] = None
-    stream_protocol: str = "RTSP"
-    is_online: bool
-    last_heartbeat: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
+    cctv_online_count: int = 0
 
 class AdminCartUpdateRequest(BaseModel):
-    status: Optional[str] = None
+    name: Optional[str] = None
+    cart_status: Optional[str] = None
     battery_percentage: Optional[int] = None
     current_route_id: Optional[str] = None
-    has_cctv: Optional[bool] = None
-
+    driver_id: Optional[str] = None

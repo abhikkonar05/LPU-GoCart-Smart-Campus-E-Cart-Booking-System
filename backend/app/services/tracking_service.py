@@ -1,13 +1,13 @@
 """
 LPU GoCart - Live GPS Telemetry Service
 Caches latest cart locations in-memory for low-latency retrieval
-and logs telemetry points to PostgreSQL.
+and logs telemetry points to database.
 """
 
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
-from app.database.models.models import GPSLocation, Cart
+from app.database.models import GPSLocation, Cart
 
 # In-memory latest positions: cart_id -> dict
 LATEST_CART_POSITIONS: Dict[str, Dict[str, Any]] = {}
@@ -47,12 +47,16 @@ def record_gps_telemetry(
         trip_id=trip_id,
         latitude=latitude,
         longitude=longitude,
-        speed_kph=speed_kph,
-        heading=heading,
         accuracy_meters=accuracy_meters,
-        recorded_at=now
+        timestamp=now
     )
     db.add(location)
+
+    # 3. Update cart gps_status
+    cart = db.query(Cart).filter(Cart.id == cart_id).first()
+    if cart:
+        cart.gps_status = "LIVE"
+
     db.commit()
     return payload
 
@@ -63,4 +67,3 @@ def get_latest_cart_position(cart_id: str) -> Optional[Dict[str, Any]]:
 def get_all_active_cart_positions() -> Dict[str, Dict[str, Any]]:
     """Return latest coordinates for all operating carts."""
     return LATEST_CART_POSITIONS
-

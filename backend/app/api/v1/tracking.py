@@ -1,13 +1,13 @@
 """
 LPU GoCart - Real-Time Telemetry REST Router
-Receives GPS coordinates from driver smartphones and updates fleet position.
+Receives GPS coordinates from driver browser/device and updates fleet position.
 """
 
 from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
-from app.database.models.models import Cart, Driver, Profile
+from app.database.models import Cart, User
 from app.schemas.tracking import GPSUpdateSchema
 from app.services.tracking_service import (
     record_gps_telemetry, get_all_active_cart_positions, get_latest_cart_position
@@ -20,11 +20,11 @@ router = APIRouter(prefix="/tracking", tags=["Live Tracking & Telemetry"])
 @router.post("/update")
 async def update_cart_location(
     req: GPSUpdateSchema,
-    current_driver_profile: Profile = Depends(get_current_driver),
+    current_driver: User = Depends(get_current_driver),
     db: Session = Depends(get_db)
 ):
     """
-    Ingest GPS telemetry point from Driver Android App.
+    Ingest GPS telemetry point from Driver interface.
     Persists coordinate in database and broadcasts live position to students & admin web console.
     """
     cart = db.query(Cart).filter(Cart.id == req.cart_id).first()
@@ -34,7 +34,7 @@ async def update_cart_location(
     telemetry = record_gps_telemetry(
         db=db,
         cart_id=req.cart_id,
-        driver_id=current_driver_profile.id,
+        driver_id=current_driver.id,
         latitude=req.latitude,
         longitude=req.longitude,
         speed_kph=req.speed_kph or 0.0,
@@ -52,7 +52,7 @@ async def update_cart_location(
         speed_kph=req.speed_kph or 0.0,
         heading=req.heading,
         battery=cart.battery_percentage,
-        available_seats=cart.total_seats,
+        available_seats=cart.total_passenger_seats,
         route_code=cart.current_route.code if cart.current_route else None
     )
 
@@ -70,4 +70,3 @@ def get_cart_telemetry(cart_id: str):
     if not pos:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No GPS telemetry found for this cart.")
     return pos
-

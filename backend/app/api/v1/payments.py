@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
-from app.database.models.models import Payment, Booking, Profile
+from app.database.models import Payment, Booking, User
 from app.schemas.payment import (
     PaymentIntentRequest, PaymentIntentResponse,
     DemoPaymentConfirmRequest, PaymentResultResponse
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 @router.post("/create-intent", response_model=PaymentIntentResponse)
 def create_payment_intent(
     req: PaymentIntentRequest,
-    current_user: Profile = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -32,7 +32,7 @@ def create_payment_intent(
     if not booking:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found.")
 
-    if booking.student_id != current_user.id:
+    if booking.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
 
     gateway = get_payment_gateway()
@@ -47,7 +47,7 @@ def create_payment_intent(
     if not payment:
         payment = Payment(
             booking_id=booking.id,
-            student_id=current_user.id,
+            user_id=current_user.id,
             amount=req.amount,
             currency="INR",
             gateway=order_data["gateway"],
@@ -77,7 +77,7 @@ def create_payment_intent(
 @router.post("/demo-confirm", response_model=PaymentResultResponse)
 def confirm_demo_payment(
     req: DemoPaymentConfirmRequest,
-    current_user: Profile = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -122,4 +122,3 @@ def confirm_demo_payment(
             transaction_reference="FAILED",
             message=verification.get("message", "Simulated payment failed.")
         )
-
