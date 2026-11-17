@@ -9,6 +9,7 @@ from jose import jwt, JWTError
 import bcrypt
 import hmac
 import hashlib
+from app.core.config import settings
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its bcrypt hash."""

@@ -4,27 +4,37 @@ Loads environment variables using Pydantic Settings.
 """
 
 from typing import List, Union
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
-# Path to backend/.env
 ENV_FILE = Path(__file__).resolve().parent.parent.parent / ".env"
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "LPU GoCart API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
+    APP_ENV: str = "development"
     ENVIRONMENT: str = "development"
     PORT: int = 8000
     LOG_LEVEL: str = "info"
 
-    # CORS Origins
+    # Core Security & JWT
+    SECRET_KEY: str = "super-secret-lpu-gocart-signing-key-change-in-production"
+    JWT_SECRET_KEY: str = "super-secret-lpu-gocart-signing-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 Hours
+
+    # Database
+    DATABASE_URL: str = "sqlite:///./lpu_gocart.db"
+
+    # URLs & CORS
+    FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
-        "http://localhost:3000",
-        "http://localhost:8081",
-        "exp://localhost:8081",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
         "*"
     ]
 
@@ -36,25 +46,15 @@ class Settings(BaseSettings):
             return v
         return ["*"]
 
-    # Supabase Credentials
-    SUPABASE_URL: str = "https://your-project-id.supabase.co"
-    SUPABASE_ANON_KEY: str = "your-anon-public-key"
-    SUPABASE_SERVICE_ROLE_KEY: str = "your-service-role-secret-key"
-    SUPABASE_DB_URL: str = ""
-
-    # Security & JWT
-    JWT_SECRET_KEY: str = "super-secret-lpu-gocart-signing-key-change-in-production"
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 Hours
-
-    # Payment Gateway Configuration ('demo' or 'razorpay')
+    # Payment Gateway ('demo' or 'razorpay')
     PAYMENT_MODE: str = "demo"
     RAZORPAY_KEY_ID: str = "rzp_test_placeholder_key_id"
     RAZORPAY_KEY_SECRET: str = "rzp_test_placeholder_secret"
 
     # Business Rules
     SEAT_LOCK_DURATION_MINUTES: int = 5
-    GPS_UPDATE_FREQUENCY_SECONDS: int = 3
+    GPS_UPDATE_INTERVAL: int = 5
+    GPS_UPDATE_FREQUENCY_SECONDS: int = 5
     QR_TICKET_SECRET: str = "lpu-gocart-qr-verification-secret-key-2026"
 
     model_config = SettingsConfigDict(
@@ -65,4 +65,3 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
-

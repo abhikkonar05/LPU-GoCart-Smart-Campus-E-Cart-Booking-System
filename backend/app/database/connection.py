@@ -1,7 +1,6 @@
 """
 LPU GoCart - Database Engine & Connection Session Management
-Supports direct Supabase PostgreSQL pooling and automated local SQLite fallback
-for zero-friction local development on Windows 11.
+Supports Render PostgreSQL pooling and automated local SQLite fallback.
 """
 
 import os
@@ -15,13 +14,12 @@ logger = logging.getLogger("lpu_gocart.database")
 Base = declarative_base()
 
 def get_database_url() -> str:
-    """Determine database URL: Supabase PostgreSQL or local SQLite fallback."""
-    db_url = settings.SUPABASE_DB_URL.strip() if settings.SUPABASE_DB_URL else ""
+    """Determine database URL: PostgreSQL or local SQLite fallback."""
+    db_url = settings.DATABASE_URL.strip() if settings.DATABASE_URL else ""
     
-    # If placeholder or empty, fallback to local SQLite database
-    if not db_url or "your-db-password" in db_url or "your-project-ref" in db_url:
-        logger.info("[DB] Using local SQLite fallback database (lpu_gocart.db)")
-        # Fix Windows path for SQLite
+    # If empty or explicitly sqlite
+    if not db_url or "sqlite" in db_url:
+        logger.info("[DB] Using local SQLite database (lpu_gocart.db)")
         return "sqlite:///./lpu_gocart.db"
     
     # Ensure SQLAlchemy uses psycopg 3 driver for PostgreSQL
@@ -30,7 +28,7 @@ def get_database_url() -> str:
     elif db_url.startswith("postgresql://") and "+" not in db_url.split("://")[0]:
         db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
         
-    logger.info("[DB] Connecting to Supabase PostgreSQL database")
+    logger.info("[DB] Connecting to PostgreSQL database")
     return db_url
 
 DATABASE_URL = get_database_url()
